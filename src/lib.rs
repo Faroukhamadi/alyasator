@@ -1,3 +1,5 @@
+use std::{fs, io::Error};
+
 use requestty::{Answers, ErrorKind, Question};
 
 pub struct Config {
@@ -54,5 +56,98 @@ impl Config {
                 return Err("Interrupted");
             }
         }
+    }
+}
+
+/* NOTES: - Bash: alias ll='ls -a'
+          - Zsh: alias ll=""
+          - Fish: alias p = "pnpm"
+*/
+
+fn path(config: &Config) -> Result<&'static str, Error> {
+    match config.shell.to_lowercase().as_str() {
+        "fish" => Ok("/home/farouk/.config/fish/config.fish"),
+        "bash" => Ok("/home/farouk/.bashrc"),
+        "zsh" => Ok("/home/farouk/.zshrc"),
+        _ => return Err(Error::new(std::io::ErrorKind::Other, "Unknown shell")),
+    }
+}
+
+pub fn append_to_rc(config: Config) -> Result<(), Error> {
+    let p: &str;
+    match path(&config) {
+        Ok(s) => {
+            p = s;
+        }
+        Err(e) => return Err(e),
+    }
+    match fs::read_to_string(p) {
+        Ok(mut file_content) => {
+            file_content.push_str(&format!("alias {}=\"{}\"", config.alias, config.original));
+            println!("new file contents: {}", file_content);
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn returns_correct_path_bash() {
+        let config = Config {
+            shell: "bash".to_string(),
+            is_permanent: true,
+            alias: "true".to_string(),
+            original: "true".to_string(),
+        };
+
+        assert_eq!(path(&config).unwrap(), "/home/farouk/.bashrc");
+    }
+
+    #[test]
+    fn returns_correct_path_zsh() {
+        let config = Config {
+            shell: "zsh".to_string(),
+            is_permanent: true,
+            alias: "true".to_string(),
+            original: "true".to_string(),
+        };
+
+        assert_eq!(path(&config).unwrap(), "/home/farouk/.zshrc");
+    }
+
+    #[test]
+    fn returns_correct_path_fish() {
+        let config = Config {
+            shell: "fish".to_string(),
+            is_permanent: true,
+            alias: "true".to_string(),
+            original: "true".to_string(),
+        };
+
+        assert_eq!(
+            path(&config).unwrap(),
+            "/home/farouk/.config/fish/config.fish"
+        );
+    }
+
+    #[test]
+    fn append_to_bash() {
+        unimplemented!();
+    }
+
+    fn append_to_zsh() {
+        unimplemented!();
+    }
+
+    fn append_to_fish() {
+        unimplemented!();
+    }
+
+    fn set_as_temp() {
+        unimplemented!();
     }
 }
