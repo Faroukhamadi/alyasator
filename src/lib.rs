@@ -1,11 +1,11 @@
 use requestty::{Answers, ErrorKind, Question};
 use std::fs;
 use std::io::{Error, ErrorKind as IoErrorKind};
-use whoami::username;
+use std::process::Command;
+use std::str;
 
 pub struct Config {
     pub shell: String,
-    pub is_permanent: bool,
     pub alias: String,
     pub original: String,
 }
@@ -16,10 +16,6 @@ fn answers() -> Result<Answers, ErrorKind> {
         .choices(vec!["Bash", "Zsh", "Fish"])
         .build();
 
-    let is_permanent_confirm = Question::confirm("permanent")
-        .message("Do you want the alias to be permanent?")
-        .build();
-
     let alias_input = Question::input("alias")
         .message("What is the alias you want to assign?")
         .build();
@@ -28,12 +24,7 @@ fn answers() -> Result<Answers, ErrorKind> {
         .message("What is the original command?")
         .build();
 
-    let answers = requestty::prompt(vec![
-        shell_select,
-        is_permanent_confirm,
-        alias_input,
-        original_input,
-    ]);
+    let answers = requestty::prompt(vec![shell_select, alias_input, original_input]);
     answers
 }
 
@@ -42,13 +33,11 @@ impl Config {
         match answers() {
             Ok(answers) => {
                 let shell_answer = answers.get("shell").unwrap();
-                let is_permanent_answer = answers.get("permanent").unwrap();
                 let alias_answer = answers.get("alias").unwrap();
                 let original_answer = answers.get("original").unwrap();
 
                 Ok(Config {
                     shell: shell_answer.as_list_item().unwrap().to_owned().text,
-                    is_permanent: is_permanent_answer.as_bool().unwrap(),
                     alias: alias_answer.as_string().unwrap().to_owned(),
                     original: original_answer.as_string().unwrap().to_owned(),
                 })
@@ -60,13 +49,6 @@ impl Config {
     }
 }
 
-/* NOTES: - Bash: alias ll='ls -a'
-          - Zsh: alias ll=""
-          - Fish: alias p="pnpm"
-    I need to search for alias [name]
-
-*/
-
 fn exists(query: &str, contents: &str) -> bool {
     for line in contents.lines() {
         if line.contains(query) {
@@ -77,7 +59,15 @@ fn exists(query: &str, contents: &str) -> bool {
 }
 
 fn path(config: &Config) -> Result<String, Error> {
-    let username = username();
+    let username = Command::new("sh")
+        .arg("-c")
+        .arg("echo $USER")
+        .output()
+        .expect("failed to execute process")
+        .stdout;
+
+    let username = str::from_utf8(&username).unwrap().trim_end();
+
     match config.shell.to_lowercase().as_str() {
         "fish" => Ok(format!("/home/{}/.config/fish/config.fish", username)),
         "bash" => Ok(format!("/home/{}/.bashrc", username)),
@@ -86,8 +76,7 @@ fn path(config: &Config) -> Result<String, Error> {
     }
 }
 
-// TODO: change this to run
-pub fn append_to_rc(config: Config) -> Result<(), Error> {
+pub fn run(config: Config) -> Result<(), Error> {
     let p: String;
     match path(&config) {
         Ok(s) => {
@@ -101,10 +90,7 @@ pub fn append_to_rc(config: Config) -> Result<(), Error> {
             let query = format!("alias {}=", config.alias);
 
             if exists(&query, &contents) {
-                return Err(Error::new(
-                    IoErrorKind::Other,
-                    "❌ Error: Alias already exists",
-                ));
+                return Err(Error::new(IoErrorKind::Other, "Alias already exists"));
             } else {
                 contents.push_str(&format!("\nalias {}=\"{}\"", config.alias, config.original));
                 fs::write(p, &contents)?;
@@ -125,7 +111,6 @@ mod tests {
     fn returns_correct_path_bash() {
         let config = Config {
             shell: "bash".to_string(),
-            is_permanent: true,
             alias: "true".to_string(),
             original: "true".to_string(),
         };
@@ -137,7 +122,6 @@ mod tests {
     fn returns_correct_path_zsh() {
         let config = Config {
             shell: "zsh".to_string(),
-            is_permanent: true,
             alias: "true".to_string(),
             original: "true".to_string(),
         };
@@ -149,7 +133,6 @@ mod tests {
     fn returns_correct_path_fish() {
         let config = Config {
             shell: "fish".to_string(),
-            is_permanent: true,
             alias: "true".to_string(),
             original: "true".to_string(),
         };
@@ -179,24 +162,6 @@ hello this string is not cool
 it doesn't contain an alias
 ";
         assert!(!exists(query, contents));
-    }
-
-    #[test]
-    #[ignore = "not implemented yet"]
-    fn append_to_bash() {
-        unimplemented!();
-    }
-
-    #[test]
-    #[ignore = "not implemented yet"]
-    fn append_to_zsh() {
-        unimplemented!();
-    }
-
-    #[test]
-    #[ignore = "not implemented yet"]
-    fn append_to_fish() {
-        unimplemented!();
     }
 
     #[test]

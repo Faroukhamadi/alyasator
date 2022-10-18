@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 requestty = "0.4.1"
-whoami = "1.2.3"
