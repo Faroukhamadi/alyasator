@@ -1,6 +1,7 @@
-use std::{fs, io::Error};
-
 use requestty::{Answers, ErrorKind, Question};
+use std::fs;
+use std::io::{Error, ErrorKind as IoErrorKind};
+use whoami::username;
 
 pub struct Config {
     pub shell: String,
@@ -75,43 +76,46 @@ fn exists(query: &str, contents: &str) -> bool {
     false
 }
 
-fn path(config: &Config) -> Result<&'static str, Error> {
+fn path(config: &Config) -> Result<String, Error> {
+    let username = username();
     match config.shell.to_lowercase().as_str() {
-        "fish" => Ok("/home/farouk/.config/fish/config.fish"),
-        "bash" => Ok("/home/farouk/.bashrc"),
-        "zsh" => Ok("/home/farouk/.zshrc"),
-        _ => return Err(Error::new(std::io::ErrorKind::Other, "Unknown shell")),
+        "fish" => Ok(format!("/home/{}/.config/fish/config.fish", username)),
+        "bash" => Ok(format!("/home/{}/.bashrc", username)),
+        "zsh" => Ok(format!("/home/{}/.zshrc", username)),
+        _ => return Err(Error::new(IoErrorKind::Other, "Unknown shell")),
     }
 }
 
+// TODO: change this to run
 pub fn append_to_rc(config: Config) -> Result<(), Error> {
-    let p: &str;
+    let p: String;
     match path(&config) {
         Ok(s) => {
             p = s;
         }
         Err(e) => return Err(e),
     }
-    match fs::read_to_string(p) {
+
+    match fs::read_to_string(&p) {
         Ok(mut contents) => {
             let query = format!("alias {}=", config.alias);
+
             if exists(&query, &contents) {
-                eprintln!("❌ Error: Alias already exists");
-            } else {
-                contents.push_str(&format!(
-                    r#"\nalias {}="{}""#,
-                    config.alias, config.original
+                return Err(Error::new(
+                    IoErrorKind::Other,
+                    "❌ Error: Alias already exists",
                 ));
+            } else {
+                contents.push_str(&format!("\nalias {}=\"{}\"", config.alias, config.original));
                 fs::write(p, &contents)?;
+
                 println!("✅ Alias successfully added");
+                return Ok(());
             }
-            return Ok(());
         }
         Err(e) => return Err(e),
     }
 }
-
-// TODO: make a fn that checks whether alias already exists
 
 #[cfg(test)]
 mod tests {
