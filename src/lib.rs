@@ -40,10 +40,10 @@ impl Config {
     pub fn build() -> Result<Config, &'static str> {
         match answers() {
             Ok(answers) => {
-                let shell_answer = answers.get("shell").unwrap().clone();
-                let is_permanent_answer = answers.get("permanent").unwrap().clone();
-                let alias_answer = answers.get("alias").unwrap().clone();
-                let original_answer = answers.get("original").unwrap().clone();
+                let shell_answer = answers.get("shell").unwrap();
+                let is_permanent_answer = answers.get("permanent").unwrap();
+                let alias_answer = answers.get("alias").unwrap();
+                let original_answer = answers.get("original").unwrap();
 
                 Ok(Config {
                     shell: shell_answer.as_list_item().unwrap().to_owned().text,
@@ -61,8 +61,19 @@ impl Config {
 
 /* NOTES: - Bash: alias ll='ls -a'
           - Zsh: alias ll=""
-          - Fish: alias p = "pnpm"
+          - Fish: alias p="pnpm"
+    I need to search for alias [name]
+
 */
+
+fn exists(query: &str, contents: &str) -> bool {
+    for line in contents.lines() {
+        if line.contains(query) {
+            return true;
+        }
+    }
+    false
+}
 
 fn path(config: &Config) -> Result<&'static str, Error> {
     match config.shell.to_lowercase().as_str() {
@@ -82,14 +93,25 @@ pub fn append_to_rc(config: Config) -> Result<(), Error> {
         Err(e) => return Err(e),
     }
     match fs::read_to_string(p) {
-        Ok(mut file_content) => {
-            file_content.push_str(&format!("alias {}=\"{}\"", config.alias, config.original));
-            println!("new file contents: {}", file_content);
+        Ok(mut contents) => {
+            let query = format!("alias {}=", config.alias);
+            if exists(&query, &contents) {
+                eprintln!("❌ Error: Alias already exists");
+            } else {
+                contents.push_str(&format!(
+                    r#"\nalias {}="{}""#,
+                    config.alias, config.original
+                ));
+                fs::write(p, &contents)?;
+                println!("✅ Alias successfully added");
+            }
             return Ok(());
         }
         Err(e) => return Err(e),
     }
 }
+
+// TODO: make a fn that checks whether alias already exists
 
 #[cfg(test)]
 mod tests {
@@ -135,18 +157,46 @@ mod tests {
     }
 
     #[test]
+    fn alias_exists() {
+        let query = "alias c=";
+        let contents = r#"\
+hello this is a cool string
+it contains an alias below
+alias c="code""#;
+
+        assert!(exists(query, contents));
+    }
+
+    #[test]
+    fn alias_doesnt_exist() {
+        let query = "alias c=";
+        let contents = r"\
+hello this string is not cool
+it doesn't contain an alias
+";
+        assert!(!exists(query, contents));
+    }
+
+    #[test]
+    #[ignore = "not implemented yet"]
     fn append_to_bash() {
         unimplemented!();
     }
 
+    #[test]
+    #[ignore = "not implemented yet"]
     fn append_to_zsh() {
         unimplemented!();
     }
 
+    #[test]
+    #[ignore = "not implemented yet"]
     fn append_to_fish() {
         unimplemented!();
     }
 
+    #[test]
+    #[ignore = "not implemented yet"]
     fn set_as_temp() {
         unimplemented!();
     }
