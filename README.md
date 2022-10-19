@@ -9,7 +9,7 @@ This is a simple tool to create aliases for your commands. It is written in Rust
 ```bash
 git clone --depth 1 https://github.com/Faroukhamadi/alyasator.git ~/.alyasator
 cd ~/.alyasator && cargo build --release
-cp ~/.alyasator/target/release/alyasator /usr/local/bin
+sudo cp ~/.alyasator/target/release/alyasator /usr/local/bin
 ```
 
 ## Supported Shells
