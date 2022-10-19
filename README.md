@@ -1,4 +1,4 @@
-# alyasator
+# Alyasator
 
 ## About
 
