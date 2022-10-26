@@ -5,7 +5,9 @@
 This is a simple tool to create aliases for your commands. It is written in Rust and is definitely blazingly fast.
 
 ## Requirements
+
 Rust and Cargo are required to build this project. You can install them from [here](https://rustup.rs).
+
 ## Installation
 
 ```bash
