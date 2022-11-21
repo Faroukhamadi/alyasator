@@ -1,5 +1,7 @@
 # Alyasator
 
+![alyasator demo](assets/demo.gif)
+
 ## About
 
 This is a simple tool to create aliases for your commands. It is written in Rust and is definitely blazingly fast.
