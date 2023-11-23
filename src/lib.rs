@@ -50,12 +50,7 @@ impl Config {
 }
 
 fn exists(query: &str, contents: &str) -> bool {
-    for line in contents.lines() {
-        if line.contains(query) {
-            return true;
-        }
-    }
-    false
+    contents.lines().any(|line| line.contains(query))
 }
 
 fn path(config: &Config) -> Result<String, Error> {
