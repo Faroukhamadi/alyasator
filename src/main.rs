@@ -1,15 +1,10 @@
-use std::process::{self};
+use std::process;
 
-use alyasator::Config;
+use alyasator::{Config, run};
 
 fn main() {
-    let config = Config::build().unwrap_or_else(|e| {
-        eprintln!("Problem getting answers: {e}");
-        process::exit(1);
-    });
-
-    if let Err(e) = alyasator::run(config) {
-        eprintln!("❌ Application error: {e}");
+    if let Err(e) = run(Config::build()) {
+        eprintln!("❌ Application error: {}", e);
         process::exit(1);
     }
 }
