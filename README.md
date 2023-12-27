@@ -4,11 +4,11 @@
 
 ## About
 
-This is a simple command-line tool to create aliases for your commands. It is written in Rust and is definitely blazingly fast.
+Alyasator is a lightning-fast command-line tool designed to streamline your command usage through aliases. Crafted in Rust, it offers speed and efficiency for your daily terminal tasks.
 
 ## Requirements
 
-Rust and Cargo are required to build this project. You can install them from [here](https://rustup.rs).
+To build this project, ensure you have Rust and Cargo installed. Don't have them yet? Get them [here](https://rustup.rs).
 
 ## Installation
 
@@ -23,3 +23,5 @@ sudo cp ~/.alyasator/target/release/alyasator /usr/local/bin
 - Bash
 - Zsh
 - Fish
+
+Feel free to enhance your command-line experience with Alyasator's simple and efficient alias management!
